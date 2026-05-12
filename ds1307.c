@@ -102,13 +102,17 @@ static void ds1307_write(uint8_t value,uint8_t reg_addr){
 	uint8_t tx[2];
 	tx[0] = reg_addr;
 	tx[1] = value;
-	HAL_I2C_Master_Transmit(&hi2c1, DS1307_I2C_ADDRESS<<1,tx, sizeof(tx), HAL_MAX_DELAY);
+	(void)HAL_I2C_Master_Transmit(&hi2c1, DS1307_I2C_ADDRESS<<1,tx, sizeof(tx), 100);
 }
 
 static uint8_t ds1307_read(uint8_t reg_addr){
-	uint8_t data;
-	HAL_I2C_Master_Transmit(&hi2c1, DS1307_I2C_ADDRESS<<1,&reg_addr, 1, HAL_MAX_DELAY);
-	HAL_I2C_Master_Receive(&hi2c1, DS1307_I2C_ADDRESS<<1, &data, 1, HAL_MAX_DELAY);
+	uint8_t data = 0;
+	if(HAL_I2C_Master_Transmit(&hi2c1, DS1307_I2C_ADDRESS<<1,&reg_addr, 1, 100) != HAL_OK){
+		return 0;
+	}
+	if(HAL_I2C_Master_Receive(&hi2c1, DS1307_I2C_ADDRESS<<1, &data, 1, 100) != HAL_OK){
+		return 0;
+	}
 	return data;
 }
 
