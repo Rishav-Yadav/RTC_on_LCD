@@ -15,17 +15,23 @@
 extern I2C_HandleTypeDef hi2c1;
 
 static void ds1307_write(uint8_t value,uint8_t reg_addr);
-static uint8_t ds1307_read(uint8_t reg_addr);
+static HAL_StatusTypeDef ds1307_read(uint8_t reg_addr, uint8_t *data);
 static uint8_t binary_to_bcd(uint8_t value);
 static uint8_t bcd_to_binary(uint8_t value);
 
 uint8_t ds1307_init(void){
+	if(HAL_I2C_IsDeviceReady(&hi2c1, DS1307_I2C_ADDRESS<<1, 3, 100) != HAL_OK){
+		return 1;
+	}
 
 	//make clock halt = 0
 	ds1307_write(0x00,DS1307_ADD_SEC);
 
 	//read back clock halt
-	uint8_t clock_state = ds1307_read(DS1307_ADD_SEC);
+	uint8_t clock_state = 0;
+	if(ds1307_read(DS1307_ADD_SEC, &clock_state) != HAL_OK){
+		return 1;
+	}
 	return ((clock_state>>7)&0x1);
 
 
@@ -47,11 +53,21 @@ void ds1307_set_current_time(RTC_time_t* rtc_time){
 	ds1307_write(hrs, DS1307_ADD_HRS);
 }
 void ds1307_get_current_time(RTC_time_t* rtc_time){
-	uint8_t seconds = ds1307_read(DS1307_ADD_SEC);
+	uint8_t seconds = 0;
+	uint8_t minutes = 0;
+	uint8_t hrs = 0;
+	if(ds1307_read(DS1307_ADD_SEC, &seconds) != HAL_OK){
+		return;
+	}
+	if(ds1307_read(DS1307_ADD_MIN, &minutes) != HAL_OK){
+		return;
+	}
+	if(ds1307_read(DS1307_ADD_HRS, &hrs) != HAL_OK){
+		return;
+	}
 	seconds &= ~ (1<<7);
 	rtc_time->seconds = bcd_to_binary(seconds);
-	rtc_time->minutes = bcd_to_binary(ds1307_read(DS1307_ADD_MIN));
-	uint8_t hrs = ds1307_read(DS1307_ADD_HRS);
+	rtc_time->minutes = bcd_to_binary(minutes);
 	if((hrs & (1<<6))){
 		rtc_time->time_format = hrs & (1<<5)?TIME_FORMAT_12HRS_PM:TIME_FORMAT_12HRS_AM;
 	}
@@ -68,10 +84,23 @@ void ds1307_set_current_date(RTC_date_t* rtc_date){
 	ds1307_write(binary_to_bcd(rtc_date->year), DS1307_ADD_YEAR);
 }
 void ds1307_get_current_date(RTC_date_t* rtc_date){
-	rtc_date->day = bcd_to_binary(ds1307_read(DS1307_ADD_DAY));
-	rtc_date->date = bcd_to_binary(ds1307_read(DS1307_ADD_DATE));
-	rtc_date->month = bcd_to_binary(ds1307_read(DS1307_ADD_MONTH));
-	rtc_date->year = bcd_to_binary(ds1307_read(DS1307_ADD_YEAR));
+	uint8_t day = 0, date = 0, month = 0, year = 0;
+	if(ds1307_read(DS1307_ADD_DAY, &day) != HAL_OK){
+		return;
+	}
+	if(ds1307_read(DS1307_ADD_DATE, &date) != HAL_OK){
+		return;
+	}
+	if(ds1307_read(DS1307_ADD_MONTH, &month) != HAL_OK){
+		return;
+	}
+	if(ds1307_read(DS1307_ADD_YEAR, &year) != HAL_OK){
+		return;
+	}
+	rtc_date->day = bcd_to_binary(day);
+	rtc_date->date = bcd_to_binary(date);
+	rtc_date->month = bcd_to_binary(month);
+	rtc_date->year = bcd_to_binary(year);
 }
 
 //void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c){
