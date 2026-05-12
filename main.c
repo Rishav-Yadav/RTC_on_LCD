@@ -333,6 +333,13 @@ static void MX_GPIO_Init(void)
   * @brief  This function is executed in case of error occurrence.
   * @retval None
   */
+
+int _write(int file, uint8_t *ptr, int len)
+{
+  (void)file;
+  HAL_UART_Transmit(&huart2, ptr, len, HAL_MAX_DELAY);
+  return len;
+}
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
