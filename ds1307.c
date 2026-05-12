@@ -134,17 +134,15 @@ static void ds1307_write(uint8_t value,uint8_t reg_addr){
 	(void)HAL_I2C_Master_Transmit(&hi2c1, DS1307_I2C_ADDRESS<<1,tx, sizeof(tx), 100);
 }
 
-static HAL_StatusTypeDef ds1307_read(uint8_t reg_addr, uint8_t *data){
-	HAL_StatusTypeDef status;
-	status = HAL_I2C_Master_Transmit(&hi2c1, DS1307_I2C_ADDRESS<<1,&reg_addr, 1, 100);
-	if(status != HAL_OK){
-		return status;
+static uint8_t ds1307_read(uint8_t reg_addr){
+	uint8_t data = 0;
+	if(HAL_I2C_Master_Transmit(&hi2c1, DS1307_I2C_ADDRESS<<1,&reg_addr, 1, 100) != HAL_OK){
+		return 0;
 	}
-	status = HAL_I2C_Master_Receive(&hi2c1, DS1307_I2C_ADDRESS<<1, data, 1, 100);
-	if(status != HAL_OK){
-		return status;
+	if(HAL_I2C_Master_Receive(&hi2c1, DS1307_I2C_ADDRESS<<1, &data, 1, 100) != HAL_OK){
+		return 0;
 	}
-	return HAL_OK;
+	return data;
 }
 
 static uint8_t binary_to_bcd(uint8_t value){
